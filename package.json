@@ -1,0 +1,32 @@
+{
+  "name": "z-image-proxy",
+  "version": "1.0.0",
+  "description": "OpenAI-compatible proxy server for Z-Image generation API",
+  "main": "api/z-image.py",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel --prod",
+    "start": "vercel dev",
+    "test": "python3 test_client.py"
+  },
+  "keywords": [
+    "z-image",
+    "image-generation",
+    "openai",
+    "proxy",
+    "vercel",
+    "serverless"
+  ],
+  "author": "Z-Image Proxy",
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/node": "^3.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

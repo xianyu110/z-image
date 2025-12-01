@@ -1,0 +1,6 @@
+# Vercel Python runtime requirements
+# Note: Most Python standard library modules are already available
+# Only include external packages here
+
+# No external dependencies needed - using only Python standard library
+# http.client, json, time, typing, logging are all standard library

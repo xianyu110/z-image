@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "name": "z-image-proxy",
+  "builds": [
+    {
+      "src": "api/z-image.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/v1/chat/completions",
+      "dest": "/api/z-image.py"
+    },
+    {
+      "src": "/api/v1/tasks/(.*)",
+      "dest": "/api/z-image.py"
+    },
+    {
+      "src": "/api/v1/images/(.*)",
+      "dest": "/api/z-image.py"
+    },
+    {
+      "src": "/api/health",
+      "dest": "/api/z-image.py"
+    },
+    {
+      "src": "/api/",
+      "dest": "/api/z-image.py"
+    }
+  ],
+  "functions": {
+    "api/z-image.py": {
+      "runtime": "python3.9"
+    }
+  },
+  "env": {
+    "PYTHON_VERSION": "3.9"
+  }
+}
