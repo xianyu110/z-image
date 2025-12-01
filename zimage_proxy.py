@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 import requests
 import time
@@ -190,10 +190,40 @@ def health_check():
         "timestamp": int(time.time())
     })
 
-@app.route('/', methods=['GET'])
+@app.route('/')
 def index():
     """
-    Root endpoint with API information
+    Root endpoint - serve optimized web interface
+    """
+    try:
+        return send_from_directory('web', 'index_optimized.html')
+    except FileNotFoundError:
+        # Fallback to API info if optimized frontend not found
+        return jsonify({
+            "service": "Z-Image Proxy Server",
+            "version": "1.0.0",
+            "description": "OpenAI-compatible proxy for Z-Image generation API",
+            "endpoints": {
+                "chat_completions": "/v1/chat/completions (POST)",
+                "task_status": "/v1/tasks/<uuid> (GET)",
+                "image_results": "/v1/images/<uuid> (GET)",
+                "health": "/health (GET)",
+                "web_interface": "/"
+            },
+            "usage": "Send OpenAI-compatible chat completion requests to /v1/chat/completions"
+        })
+
+@app.route('/<path:filename>')
+def static_files(filename):
+    """
+    Serve static files from web directory
+    """
+    return send_from_directory('web', filename)
+
+@app.route('/api')
+def api_info():
+    """
+    API information endpoint
     """
     return jsonify({
         "service": "Z-Image Proxy Server",
@@ -203,9 +233,15 @@ def index():
             "chat_completions": "/v1/chat/completions (POST)",
             "task_status": "/v1/tasks/<uuid> (GET)",
             "image_results": "/v1/images/<uuid> (GET)",
-            "health": "/health (GET)"
+            "health": "/health (GET)",
+            "api_info": "/api",
+            "web_interface": "/"
         },
-        "usage": "Send OpenAI-compatible chat completion requests to /v1/chat/completions"
+        "presets": {
+            "fast": {"batch_size": 1, "width": 512, "height": 512, "steps": 4, "time": "2-3s"},
+            "balanced": {"batch_size": 2, "width": 768, "height": 768, "steps": 6, "time": "4-6s"},
+            "quality": {"batch_size": 4, "width": 1024, "height": 1024, "steps": 8, "time": "8-12s"}
+        }
     })
 
 if __name__ == '__main__':

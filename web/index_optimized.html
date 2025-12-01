@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z-Image 图片生成 - 高性能版本</title>
+    <link rel="stylesheet" href="styles_optimized.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1><i class="fas fa-bolt"></i> Z-Image 图片生成</h1>
+            <p class="subtitle">⚡ 高性能版本 - 支持2秒极速生成</p>
+            <div class="server-stats">
+                <div class="stat-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span id="serverStatus">检查中...</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="avgTime">-</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区 -->
+        <main class="main-content">
+            <!-- 左侧：输入和配置 -->
+            <section class="input-section">
+                <!-- API 配置 -->
+                <div class="config-card">
+                    <h3><i class="fas fa-cog"></i> API 配置</h3>
+                    <div class="form-group">
+                        <label for="apiUrl">API 地址:</label>
+                        <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="输入 API 地址">
+                        <button class="test-btn" onclick="testApiConnection()">
+                            <i class="fas fa-plug"></i> 测试
+                        </button>
+                    </div>
+                    <div id="connectionStatus" class="status-indicator">
+                        <i class="fas fa-circle"></i>
+                        <span>未连接</span>
+                    </div>
+                </div>
+
+                <!-- 速度预设选择 -->
+                <div class="preset-card">
+                    <h3><i class="fas fa-rocket"></i> 速度预设</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn active" data-preset="fast" onclick="selectPreset('fast')">
+                            <i class="fas fa-bolt"></i>
+                            <div class="preset-name">极速模式</div>
+                            <div class="preset-desc">2-3秒 • 512x512</div>
+                        </button>
+                        <button class="preset-btn" data-preset="balanced" onclick="selectPreset('balanced')">
+                            <i class="fas fa-balance-scale"></i>
+                            <div class="preset-name">平衡模式</div>
+                            <div class="preset-desc">4-6秒 • 768x768</div>
+                        </button>
+                        <button class="preset-btn" data-preset="quality" onclick="selectPreset('quality')">
+                            <i class="fas fa-gem"></i>
+                            <div class="preset-name">质量模式</div>
+                            <div class="preset-desc">8-12秒 • 1024x1024</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 图片描述输入 -->
+                <div class="input-card">
+                    <h3><i class="fas fa-pencil-alt"></i> 图片描述</h3>
+                    <div class="form-group">
+                        <label for="prompt">描述内容:</label>
+                        <textarea id="prompt" placeholder="请输入图片描述，例如：一只可爱的猫咪">一只可爱的猫咪</textarea>
+                        <div class="quick-prompts">
+                            <span class="quick-label">快速示例：</span>
+                            <button class="quick-prompt" onclick="setPrompt('一只可爱的猫咪')">🐱 猫咪</button>
+                            <button class="quick-prompt" onclick="setPrompt('美丽的山水风景')">🏔️ 风景</button>
+                            <button class="quick-prompt" onclick="setPrompt('科幻风格的城市')">🚀 科幻</button>
+                            <button class="quick-prompt" onclick="setPrompt('精美的动漫角色')">🎨 动漫</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="negativePrompt">负面描述:</label>
+                        <textarea id="negativePrompt" placeholder="输入要避免的内容">模糊，低质量，水印</textarea>
+                    </div>
+                </div>
+
+                <!-- 高级参数 -->
+                <div class="advanced-card">
+                    <h3><i class="fas fa-sliders-h"></i> 高级参数</h3>
+                    <div class="param-grid">
+                        <div class="param-item">
+                            <label for="batchSize">生成数量:</label>
+                            <select id="batchSize">
+                                <option value="1">1张 (最快)</option>
+                                <option value="2">2张</option>
+                                <option value="4">4张</option>
+                            </select>
+                        </div>
+                        <div class="param-item">
+                            <label for="width">宽度:</label>
+                            <select id="width">
+                                <option value="512">512px</option>
+                                <option value="768">768px</option>
+                                <option value="1024">1024px</option>
+                                <option value="1360">1360px</option>
+                            </select>
+                        </div>
+                        <div class="param-item">
+                            <label for="height">高度:</label>
+                            <select id="height">
+                                <option value="512">512px</option>
+                                <option value="768">768px</option>
+                                <option value="1024">1024px</option>
+                                <option value="1024">1024px</option>
+                            </select>
+                        </div>
+                        <div class="param-item">
+                            <label for="steps">生成步数:</label>
+                            <input type="range" id="steps" min="4" max="20" value="4" oninput="updateStepsDisplay()">
+                            <span id="stepsDisplay">4步</span>
+                        </div>
+                        <div class="param-item">
+                            <label for="cfgScale">引导强度:</label>
+                            <input type="range" id="cfgScale" min="1" max="20" value="7" oninput="updateCfgDisplay()">
+                            <span id="cfgDisplay">7</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 生成按钮 -->
+                <div class="generate-section">
+                    <button id="generateBtn" onclick="generateImage()" class="generate-btn">
+                        <i class="fas fa-magic"></i>
+                        <span>开始生成</span>
+                    </button>
+                    <button id="cancelBtn" onclick="cancelGeneration()" class="cancel-btn" style="display: none;">
+                        <i class="fas fa-stop"></i>
+                        <span>取消生成</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 右侧：结果展示 -->
+            <section class="result-section">
+                <!-- 生成状态 -->
+                <div class="status-card">
+                    <h3><i class="fas fa-chart-line"></i> 生成状态</h3>
+                    <div class="status-content">
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div id="progressFill" class="progress-fill"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span id="progressPercent">0%</span>
+                                <span id="progressTime">0s</span>
+                            </div>
+                        </div>
+                        <div class="status-details">
+                            <div class="status-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span id="statusText">等待生成...</span>
+                            </div>
+                            <div class="status-item">
+                                <i class="fas fa-tasks"></i>
+                                <span id="taskInfo">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图片结果 -->
+                <div class="results-card">
+                    <h3><i class="fas fa-images"></i> 生成结果</h3>
+                    <div id="imageGallery" class="image-gallery">
+                        <div class="placeholder">
+                            <i class="fas fa-image"></i>
+                            <p>等待生成图片...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史记录 -->
+                <div class="history-card">
+                    <h3><i class="fas fa-history"></i> 历史记录</h3>
+                    <div id="historyGallery" class="history-gallery">
+                        <div class="placeholder">
+                            <i class="fas fa-clock"></i>
+                            <p>暂无历史记录</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 日志控制台 -->
+        <section class="console-section">
+            <div class="console-header">
+                <h3><i class="fas fa-terminal"></i> 日志控制台</h3>
+                <div class="console-controls">
+                    <button onclick="clearLogs()" class="console-btn">
+                        <i class="fas fa-trash"></i> 清空
+                    </button>
+                    <button onclick="exportLogs()" class="console-btn">
+                        <i class="fas fa-download"></i> 导出
+                    </button>
+                </div>
+            </div>
+            <div id="logContainer" class="log-container"></div>
+        </section>
+    </div>
+
+    <!-- 图片预览模态框 -->
+    <div id="imageModal" class="modal" onclick="closeImageModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="closeImageModal()">&times;</span>
+            <img id="modalImage" src="" alt="预览图片">
+            <div class="modal-actions">
+                <a id="modalDownload" href="" download class="modal-btn">
+                    <i class="fas fa-download"></i> 下载
+                </a>
+                <button onclick="copyImageUrl()" class="modal-btn">
+                    <i class="fas fa-copy"></i> 复制链接
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script_optimized.js"></script>
+</body>
+</html>
