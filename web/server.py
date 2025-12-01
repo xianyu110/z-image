@@ -15,7 +15,7 @@ from pathlib import Path
 PORT = 3000
 
 # 获取当前目录
-DIRECTORY = Path(__file__).parent
+DIRECTORY = str(Path(__file__).parent)
 
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -32,26 +32,44 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
+def find_free_port(start_port=3000, max_attempts=10):
+    """查找可用端口"""
+    import socket
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("", port))
+                return port
+        except OSError:
+            continue
+    return None
+
 def main():
     """启动服务器"""
     try:
         # 切换到 web 目录
         os.chdir(DIRECTORY)
 
-        # 创建服务器
-        with socketserver.TCPServer(("", PORT), MyHTTPRequestHandler) as httpd:
-            print(f"🚀 Z-Image 前端测试服务器启动成功!")
-            print(f"📱 访问地址: http://localhost:{PORT}")
-            print(f"📁 服务目录: {DIRECTORY}")
-            print(f"⏹️  按 Ctrl+C 停止服务器")
-            print("-" * 50)
+        # 查找可用端口
+        free_port = find_free_port(PORT)
+        if not free_port:
+            print(f"❌ 无法找到可用端口 ({PORT}-{PORT+9})")
+            return
 
-            # 自动打开浏览器
-            try:
-                webbrowser.open(f'http://localhost:{PORT}')
-                print("🌐 已自动打开浏览器")
-            except:
-                print("⚠️  无法自动打开浏览器，请手动访问上述地址")
+        # 创建服务器
+        with socketserver.TCPServer(("", free_port), MyHTTPRequestHandler) as httpd:
+            print(f"🚀 Z-Image 前端测试服务器启动成功!")
+        print(f"📱 访问地址: http://localhost:{free_port}")
+        print(f"📁 服务目录: {DIRECTORY}")
+        print(f"⏹️  按 Ctrl+C 停止服务器")
+        print("-" * 50)
+
+        # 自动打开浏览器
+        try:
+            webbrowser.open(f'http://localhost:{free_port}')
+            print("🌐 已自动打开浏览器")
+        except:
+            print("⚠️  无法自动打开浏览器，请手动访问上述地址")
 
             # 启动服务器
             httpd.serve_forever()

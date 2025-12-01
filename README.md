@@ -34,7 +34,20 @@ docker-compose logs -f
 docker-compose down
 ```
 
-#### 2. 使用 Docker 命令
+#### 2. 使用简化版 Docker（推荐解决 APT 问题）
+
+如果遇到 APT 包管理器错误，使用 Alpine Linux 版本：
+
+```bash
+# 使用简化版启动
+docker-compose -f docker-compose.simple.yml up -d
+
+# 或使用 Makefile
+make build-simple
+make run-simple
+```
+
+#### 3. 使用 Docker 命令
 
 ```bash
 # 构建镜像
@@ -53,6 +66,22 @@ docker logs z-image-proxy
 # 停止容器
 docker stop z-image-proxy
 docker rm z-image-proxy
+```
+
+#### 4. 使用 Makefile（推荐）
+
+```bash
+# 查看所有命令
+make help
+
+# 快速开始
+make quickstart
+
+# 构建和运行
+make build && make run
+
+# 查看状态
+make status
 ```
 
 ### 方法二：本地部署
