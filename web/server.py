@@ -59,17 +59,17 @@ def main():
         # 创建服务器
         with socketserver.TCPServer(("", free_port), MyHTTPRequestHandler) as httpd:
             print(f"🚀 Z-Image 前端测试服务器启动成功!")
-        print(f"📱 访问地址: http://localhost:{free_port}")
-        print(f"📁 服务目录: {DIRECTORY}")
-        print(f"⏹️  按 Ctrl+C 停止服务器")
-        print("-" * 50)
+            print(f"📱 访问地址: http://localhost:{free_port}")
+            print(f"📁 服务目录: {DIRECTORY}")
+            print(f"⏹️  按 Ctrl+C 停止服务器")
+            print("-" * 50)
 
-        # 自动打开浏览器
-        try:
-            webbrowser.open(f'http://localhost:{free_port}')
-            print("🌐 已自动打开浏览器")
-        except:
-            print("⚠️  无法自动打开浏览器，请手动访问上述地址")
+            # 自动打开浏览器
+            try:
+                webbrowser.open(f'http://localhost:{free_port}')
+                print("🌐 已自动打开浏览器")
+            except:
+                print("⚠️  无法自动打开浏览器，请手动访问上述地址")
 
             # 启动服务器
             httpd.serve_forever()

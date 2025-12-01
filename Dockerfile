@@ -27,12 +27,13 @@ RUN pip install --no-cache-dir --upgrade pip
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制应用代码（排除不需要的文件）
+# 创建非 root 用户（使用更兼容的方式）
+RUN adduser --disabled-password --gecos '' app
+
+# 复制应用代码并设置权限
 COPY --chown=app:app . .
 
-# 创建非 root 用户（使用更兼容的方式）
-RUN adduser --disabled-password --gecos '' app; \
-    chown -R app:app /app
+# 设置正确的权限
 USER app
 
 # 暴露端口
