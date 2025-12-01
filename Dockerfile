@@ -12,7 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # 更新包管理器并安装系统依赖（使用更稳定的方式）
 RUN set -eux; \
-    apt-get $APT_OPTIONS update; \
+    apt-get $APT_OPTIONS update || true; \
     apt-get $APT_OPTIONS install -y --no-install-recommends \
         gcc \
         curl \
