@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z-Image 图片生成测试工具</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1><i class="fas fa-image"></i> Z-Image 图片生成测试工具</h1>
+            <p class="subtitle">兼容 OpenAI 格式的图片生成 API 代理服务测试界面</p>
+        </header>
+
+        <!-- 主要内容区 -->
+        <main class="main-content">
+            <!-- 左侧：输入和配置 -->
+            <section class="input-section">
+                <!-- API 配置 -->
+                <div class="config-card">
+                    <h3><i class="fas fa-cog"></i> API 配置</h3>
+                    <div class="form-group">
+                        <label for="apiUrl">API 地址:</label>
+                        <input type="text" id="apiUrl" value="http://localhost:8000" placeholder="输入 API 地址">
+                        <button class="test-btn" onclick="testApiConnection()">
+                            <i class="fas fa-plug"></i> 测试连接
+                        </button>
+                    </div>
+                    <div id="connectionStatus" class="status-indicator">
+                        <i class="fas fa-circle"></i>
+                        <span>未连接</span>
+                    </div>
+                </div>
+
+                <!-- 图片描述输入 -->
+                <div class="input-card">
+                    <h3><i class="fas fa-pencil-alt"></i> 图片描述</h3>
+                    <div class="form-group">
+                        <label for="prompt">描述内容:</label>
+                        <textarea id="prompt" placeholder="请输入图片描述，例如：一只站在月球上的可爱猫咪，超现实主义风格，高质量，细节丰富">一只站在月球上的可爱猫咪，超现实主义风格，高质量，细节丰���</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="negativePrompt">负面描述:</label>
+                        <textarea id="negativePrompt" placeholder="输入要避免的内容，例如：模糊、低质量、水印">模糊，低质量，水印，畸形，文字</textarea>
+                    </div>
+                </div>
+
+                <!-- 参数设置 -->
+                <div class="params-card">
+                    <h3><i class="fas fa-sliders-h"></i> 生成参数</h3>
+                    <div class="params-grid">
+                        <div class="form-group">
+                            <label for="model">模型:</label>
+                            <select id="model">
+                                <option value="zimage-turbo">Z-Image Turbo (快速)</option>
+                                <option value="zimage-base">Z-Image Base (标准)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="batchSize">生成数量:</label>
+                            <input type="number" id="batchSize" value="1" min="1" max="4">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="width">宽度:</label>
+                            <select id="width">
+                                <option value="512">512px</option>
+                                <option value="768">768px</option>
+                                <option value="1024" selected>1024px</option>
+                                <option value="1360">1360px</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="height">高度:</label>
+                            <select id="height">
+                                <option value="512">512px</option>
+                                <option value="768">768px</option>
+                                <option value="1024" selected>1024px</option>
+                                <option value="1360">1360px</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="steps">采样步数:</label>
+                            <input type="range" id="steps" value="8" min="1" max="20" oninput="updateStepsDisplay(this.value)">
+                            <span id="stepsDisplay">8</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cfgScale">引导强度:</label>
+                            <input type="range" id="cfgScale" value="7" min="1" max="20" oninput="updateCfgDisplay(this.value)">
+                            <span id="cfgDisplay">7</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 生成按钮 -->
+                <div class="action-section">
+                    <button id="generateBtn" class="generate-btn" onclick="generateImage()">
+                        <i class="fas fa-magic"></i> 生成图片
+                    </button>
+                    <button id="stopBtn" class="stop-btn" onclick="stopGeneration()" style="display: none;">
+                        <i class="fas fa-stop"></i> 停止生成
+                    </button>
+                </div>
+
+                <!-- 预设提示词 -->
+                <div class="presets-card">
+                    <h3><i class="fas fa-lightbulb"></i> 预设提示词</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="applyPreset('一只坐在窗边的猫，阳光洒进来，温馨氛围，摄影级质量')">窗边的猫咪</button>
+                        <button class="preset-btn" onclick="applyPreset('未来城市夜景，霓虹灯闪烁，赛博朋克风格，高清')">未来城市</button>
+                        <button class="preset-btn" onclick="applyPreset('山水画，中国古典风格，水墨画，意境深远')">中国山水画</button>
+                        <button class="preset-btn" onclick="applyPreset('美味的巧克力蛋糕，精致摆盘，美食摄影，特写')">巧克力蛋糕</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧：结果展示 -->
+            <section class="output-section">
+                <!-- 状态信息 -->
+                <div class="status-card">
+                    <h3><i class="fas fa-info-circle"></i> 生成状态</h3>
+                    <div id="statusContent">
+                        <div class="status-item">
+                            <label>当前状态:</label>
+                            <span id="currentStatus" class="status-text">等待生成...</span>
+                        </div>
+                        <div class="status-item">
+                            <label>任务ID:</label>
+                            <span id="taskId" class="task-id">-</span>
+                        </div>
+                        <div class="status-item">
+                            <label>进度:</label>
+                            <div class="progress-bar">
+                                <div id="progressBar" class="progress-fill"></div>
+                            </div>
+                            <span id="progressText">0%</span>
+                        </div>
+                        <div class="status-item">
+                            <label>已用时间:</label>
+                            <span id="elapsedTime">0秒</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 结果展示 -->
+                <div class="results-card">
+                    <h3><i class="fas fa-images"></i> 生成结果</h3>
+                    <div id="resultsContainer">
+                        <div class="placeholder">
+                            <i class="fas fa-image"></i>
+                            <p>点击"生成图片"开始创建</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="result-actions" id="resultActions" style="display: none;">
+                    <button class="action-btn" onclick="downloadAllImages()">
+                        <i class="fas fa-download"></i> 下载全部
+                    </button>
+                    <button class="action-btn" onclick="clearResults()">
+                        <i class="fas fa-trash"></i> 清空结果
+                    </button>
+                    <button class="action-btn" onclick="shareResults()">
+                        <i class="fas fa-share"></i> 分享
+                    </button>
+                </div>
+
+                <!-- 日志信息 -->
+                <div class="logs-card">
+                    <h3><i class="fas fa-terminal"></i> 操作日志</h3>
+                    <div id="logsContainer" class="logs-content">
+                        <div class="log-entry">
+                            <span class="log-time">[00:00:00]</span>
+                            <span class="log-info">系统就绪</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 底部 -->
+        <footer class="footer">
+            <p>Z-Image 图片生成代理服务测试工具 | ���容 OpenAI API 格式</p>
+            <div class="footer-links">
+                <a href="https://github.com/xianyu110/z-image" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <a href="https://zimage.run" target="_blank">
+                    <i class="fas fa-link"></i> Z-Image 官网
+                </a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>正在生成图片...</p>
+    </div>
+
+    <!-- 图片预览模态框 -->
+    <div id="imageModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <img id="modalImage" src="" alt="预览图片">
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
