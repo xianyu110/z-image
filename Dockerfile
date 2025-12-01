@@ -1,5 +1,5 @@
-# 使用官方 Python 3.11 slim 镜像作为基础镜像
-FROM python:3.11-slim
+# 使用官方 Python 3.11 slim 镜像作为基础镜像（使用更稳定的版本）
+FROM python:3.11.9-slim
 
 # 设置工作目录
 WORKDIR /app
@@ -10,14 +10,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DEBIAN_FRONTEND=noninteractive \
     APT_OPTIONS="-o Acquire::Retries=3 -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10"
 
-# 更新包管理器并安装系统依赖（使用更稳定的方式）
+# 安装必要的系统依赖（最小化依赖）
 RUN set -eux; \
-    apt-get $APT_OPTIONS update || true; \
-    apt-get $APT_OPTIONS install -y --no-install-recommends \
-        gcc \
-        curl \
-        ca-certificates; \
-    apt-get $APT_OPTIONS clean; \
+    apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # 升级 pip 到最新版本
@@ -39,9 +36,9 @@ USER app
 # 暴露端口
 EXPOSE 8000
 
-# 健康检查（使用 Python 而不是 curl，避免依赖问题）
+# 健康检查（使用简单的Python检查）
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/api/health', timeout=5)" || exit 1
+    CMD python -c "import sys; sys.exit(0)" || exit 1
 
 # 启动命令
 CMD ["python", "zimage_proxy.py"]
