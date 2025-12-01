@@ -7,31 +7,40 @@ WORKDIR /app
 # 设置环境变量
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8000
+    DEBIAN_FRONTEND=noninteractive \
+    APT_OPTIONS="-o Acquire::Retries=3 -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10"
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# 更新包管理器并安装系统依赖（使用更稳定的方式）
+RUN set -eux; \
+    apt-get $APT_OPTIONS update; \
+    apt-get $APT_OPTIONS install -y --no-install-recommends \
+        gcc \
+        curl \
+        ca-certificates; \
+    apt-get $APT_OPTIONS clean; \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# 升级 pip 到最新版本
+RUN pip install --no-cache-dir --upgrade pip
 
 # 复制 requirements.txt 并安装 Python 依赖
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制应用代码
-COPY . .
+# 复制应用代码（排除不需要的文件）
+COPY --chown=app:app . .
 
-# 创建非 root 用户
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
+# 创建非 root 用户（使用更兼容的方式）
+RUN adduser --disabled-password --gecos '' app; \
+    chown -R app:app /app
 USER app
 
 # 暴露端口
 EXPOSE 8000
 
-# 健康检查
+# 健康检查（使用 Python 而不是 curl，避免依赖问题）
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health || exit 1
+    CMD python -c "import requests; requests.get('http://localhost:8000/api/health', timeout=5)" || exit 1
 
 # 启动命令
 CMD ["python", "zimage_proxy.py"]

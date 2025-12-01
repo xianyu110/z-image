@@ -17,9 +17,17 @@ build: ## 构建 Docker 镜像
 	@echo "🏗️  构建 Docker 镜像..."
 	docker build -t z-image-proxy .
 
+build-simple: ## 构建简化版 Docker 镜像 (Alpine)
+	@echo "🏗️  构建简化版 Docker 镜像 (Alpine Linux)..."
+	docker build -f Dockerfile.simple -t z-image-proxy-simple .
+
 run: ## 运行容器 (后台)
 	@echo "🚀 启动服务..."
 	docker-compose up -d
+
+run-simple: ## 运行简化版容器
+	@echo "🚀 启动简化版服务..."
+	docker-compose -f docker-compose.simple.yml up -d
 
 run-frontend: ## 运行容器 (前台显示日志)
 	@echo "🚀 启动服务 (前台)..."

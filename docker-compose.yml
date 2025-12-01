@@ -5,6 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # 添加构建参数和缓存优化
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     container_name: z-image-proxy
     ports:
       - "8000:8000"
@@ -12,16 +15,37 @@ services:
       - PORT=8000
       - ZIMAGE_API_HOST=https://zimage.run
       - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
     restart: unless-stopped
+    # 优化的健康检查（使用 Python 而不是 curl）
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/health', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     networks:
       - z-image-network
+    # 添加资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    # 添加日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   z-image-network:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
