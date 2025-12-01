@@ -6,16 +6,9 @@ WORKDIR /app
 
 # 设置环境变量
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive \
-    APT_OPTIONS="-o Acquire::Retries=3 -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10"
+    PYTHONUNBUFFERED=1
 
-# 安装必要的系统依赖（最小化依赖）
-RUN set -eux; \
-    apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# 跳过系统包安装（Python镜像已包含ca-certificates）
 
 # 升级 pip 到最新版本
 RUN pip install --no-cache-dir --upgrade pip
