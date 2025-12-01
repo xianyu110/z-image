@@ -7,9 +7,9 @@ let isGenerating = false;
 
 // API 配置
 const API_CONFIG = {
-    baseUrl: 'http://localhost:8000',
+    baseUrl: 'http://localhost:8001',
     endpoints: {
-        health: '/api/health',
+        health: '/health',
         completions: '/v1/chat/completions',
         task: '/v1/tasks/{taskId}',
         image: '/v1/images/{taskId}'
@@ -218,6 +218,12 @@ async function generateImage() {
         }
 
         const data = await response.json();
+
+        // 验证响应数据结构
+        if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.task_uuid) {
+            throw new Error('服务器响应格式错误，缺少任务 ID');
+        }
+
         currentTaskId = data.choices[0].message.task_uuid;
 
         document.getElementById('taskId').textContent = currentTaskId;
@@ -257,7 +263,9 @@ function startTaskPolling() {
     startElapsedTimeCounter();
 
     generationInterval = setInterval(async () => {
-        await checkTaskStatus();
+        if (currentTaskId) {
+            await checkTaskStatus();
+        }
     }, 2000); // 每2秒检查一次
 }
 
@@ -294,6 +302,11 @@ async function checkTaskStatus() {
 
 // 获取任务结果
 async function getTaskResult() {
+    if (!currentTaskId) {
+        addLog('错误：任务 ID 为空，无法获取结果', 'error');
+        return;
+    }
+
     try {
         const apiUrl = document.getElementById('apiUrl').value;
         const response = await fetch(`${apiUrl}${API_CONFIG.endpoints.image.replace('{taskId}', currentTaskId)}`);

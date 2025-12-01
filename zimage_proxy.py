@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import requests
 import time
 import logging
 from typing import Dict, Any, Optional
 
 app = Flask(__name__)
+CORS(app)  # 启用 CORS 支持
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -116,6 +118,13 @@ def get_image_results(uuid: str):
     """
     Get completed image URLs for a task (polls until completion)
     """
+    # 检查 UUID 是否为空或无效
+    if not uuid or uuid.lower() == 'null' or uuid == 'None':
+        return jsonify({
+            "error": "Invalid task UUID",
+            "message": "UUID cannot be null or empty"
+        }), 400
+
     try:
         max_attempts = 60  # Maximum polling attempts (5 minutes with 5-second intervals)
         attempt = 0
@@ -128,7 +137,9 @@ def get_image_results(uuid: str):
 
             if result.get('success') and result.get('data', {}).get('task', {}).get('taskStatus') == 'completed':
                 task_data = result['data']['task']
-                image_urls = task_data.get('resultUrls', [])
+                # 检查是否有图片结果
+                result_url = task_data.get('resultUrl')
+                image_urls = [result_url] if result_url else task_data.get('resultUrls', [])
 
                 logger.info(f"Task {uuid} completed with {len(image_urls)} images")
 

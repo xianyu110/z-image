@@ -20,10 +20,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 创建非 root 用户（使用更兼容的方式）
 RUN adduser --disabled-password --gecos '' app
 
-# 复制应用代码并设置权限
-COPY --chown=app:app . .
+# 复制应用代码
+COPY . .
 
-# 设置正确的权限
+# 设置文件权限并切换用户
+RUN chown -R app:app /app
 USER app
 
 # 暴露端口

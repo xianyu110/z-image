@@ -19,11 +19,14 @@ RUN pip install --no-cache-dir --upgrade pip
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 复制应用代码
-COPY --chown=app:app . .
-
 # 创建非 root 用户
-RUN adduser -D -s /bin/sh app && chown -R app:app /app
+RUN adduser -D -s /bin/sh app
+
+# 复制应用代码
+COPY . .
+
+# 设置文件权限
+RUN chown -R app:app /app
 USER app
 
 # 暴露端口
