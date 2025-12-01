@@ -9,12 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000
 
-# 安装必要的系统依赖（Alpine 使用 apk 而不是 apt）
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    libffi-dev \
-    openssl-dev
+# Python packages in this project don't need compilation
+# Skip system dependencies to avoid any package manager issues
 
 # 升级 pip
 RUN pip install --no-cache-dir --upgrade pip
