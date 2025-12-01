@@ -1,42 +1,58 @@
-# Z-Image Proxy Server
+# Z-Image 图片生成代理服务器
 
-An OpenAI-compatible proxy server for the Z-Image generation API that allows you to use OpenAI SDKs and libraries with Z-Image's image generation service.
+一个兼容 OpenAI ���式的 Z-Image 图片生成 API 代理服务器，让你能够使用 OpenAI 的 SDK 和工具库来调用 Z-Image 的图片生成服务。
 
-## Features
+## ✨ 特性
 
-- **OpenAI-Compatible**: Accepts OpenAI chat completion format requests
-- **Automatic Translation**: Converts OpenAI requests to Z-Image API format
-- **Task Management**: Handles task submission, status checking, and result polling
-- **Error Handling**: Comprehensive error handling and logging
-- **Health Monitoring**: Built-in health check endpoint
-- **Easy Integration**: Works with existing OpenAI SDKs
+- **OpenAI 兼容** - 接受标准的 OpenAI chat completion 格式请求
+- **自动翻译** - 将 OpenAI 请求自动转换为 Z-Image API 格式
+- **任务管理** - 处理任务提交、状态检查和结果轮询
+- **错误处理** - 完善的错误处理和日志记录
+- **健康监控** - 内置健康检查端点
+- **易于集成** - 与现有的 OpenAI SDK 完全兼容
+- **双重部署** - 支持本地部署和 Vercel 云端部署
 
-## Installation
+## 📦 安装
 
-1. Clone or download this repository
-2. Install dependencies:
+### 方法一：本地部署
+
+1. 克隆或下载这个仓库
+2. 安装依赖：
    ```bash
    pip install -r requirements.txt
    ```
 
-## Usage
+### 方法二：Vercel 部署（推荐）
 
-### Starting the Server
+1. 点击下面的按钮一键部署到 Vercel：
+
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/xianyu110/z-image.git)
+
+2. 或者手动部署（见 [Vercel 部署指南](VERCEL_DEPLOYMENT.md)）
+
+## 🚀 使用方法
+
+### 本地开发服务器
 
 ```bash
 python zimage_proxy.py
 ```
 
-The server will start on `http://localhost:8000`
+服务器将在 `http://localhost:8001` 启动（端口 8000 可能被占用）
 
-### API Endpoints
+### 云端部署
 
-#### 1. Generate Images (OpenAI Compatible)
+部署到 Vercel 后，你的 API 端点为：
+`https://your-app.vercel.app/api/v1/chat/completions`
+
+### 🔌 API 端点
+
+#### 1. 生成图片（OpenAI 兼容格式）
 ```bash
-POST /v1/chat/completions
+POST /api/v1/chat/completions
 ```
 
-**Request Format:**
+**请求格式：**
 ```json
 {
   "model": "zimage-turbo",
@@ -58,7 +74,7 @@ POST /v1/chat/completions
 }
 ```
 
-**Response Format:**
+**响应格式：**
 ```json
 {
   "id": "chatcmpl-uuid",
@@ -84,27 +100,28 @@ POST /v1/chat/completions
 }
 ```
 
-#### 2. Check Task Status
+#### 2. 检查任务状态
 ```bash
-GET /v1/tasks/{uuid}
+GET /api/v1/tasks/{uuid}
 ```
 
-#### 3. Get Completed Images (Polling)
+#### 3. 获取完成的图片（自动轮询）
 ```bash
-GET /v1/images/{uuid}
+GET /api/v1/images/{uuid}
 ```
 
-#### 4. Health Check
+#### 4. 健康检查
 ```bash
-GET /health
+GET /api/health
 ```
 
-### cURL Examples
+### 📋 使用示例
 
-#### Generate Images:
+#### cURL 命令示例
+
+**本地服务器生成图片：**
 ```bash
-curl http://localhost:8000/v1/chat/completions \
-  -H "Authorization: Bearer zimage-free" \
+curl http://localhost:8001/api/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "zimage-turbo",
@@ -119,25 +136,49 @@ curl http://localhost:8000/v1/chat/completions \
   }'
 ```
 
-#### Check Task Status:
+**云端服务器生成图片：**
 ```bash
-curl http://localhost:8000/v1/tasks/{task-uuid}
+curl https://your-app.vercel.app/api/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "zimage-turbo",
+    "messages": [{"role": "user", "content": "一只站在月球上的猫，超现实主义"}],
+    "extra_body": {
+      "prompt": "一只站在月球上的猫，超现实主义",
+      "batch_size": 4,
+      "width": 1360,
+      "height": 1024,
+      "negative_prompt": "模糊,水印"
+    }
+  }'
 ```
 
-#### Get Final Images:
+**检查任务状态：**
 ```bash
-curl http://localhost:8000/v1/images/{task-uuid}
+curl http://localhost:8001/api/v1/tasks/{task-uuid}
 ```
 
-### Using with OpenAI Python SDK
+**获取最终图片：**
+```bash
+curl http://localhost:8001/api/v1/images/{task-uuid}
+```
+
+#### 使用 OpenAI Python SDK
 
 ```python
 from openai import OpenAI
 
+# 本地服务器
 client = OpenAI(
-    api_key="zimage-free",
-    base_url="http://localhost:8000/v1"
+    api_key="zimage-free",  # 可选，仅用于兼容
+    base_url="http://localhost:8001/api/v1"
 )
+
+# 或者云端服务器
+# client = OpenAI(
+#     api_key="zimage-free",
+#     base_url="https://your-app.vercel.app/api/v1"
+# )
 
 response = client.chat.completions.create(
     model="zimage-turbo",
@@ -154,102 +195,131 @@ response = client.chat.completions.create(
 )
 
 task_uuid = response.choices[0].message.content
-print(f"Task submitted: {task_uuid}")
+print(f"任务已提交，UUID: {task_uuid}")
 ```
 
-### Testing with the Included Client
+#### 使用内置测试客户端
 
-The included test client demonstrates how to use the proxy server:
+内置的测试客户端演示了如何使用代理服务器：
 
 ```bash
-# Test with default prompt
-python test_client.py
+# 使用默认提示词测试
+python3 test_client.py
 
-# Test with custom prompt
-python test_client.py --prompt "A beautiful sunset over mountains" --batch-size 2
+# 使用自定义提示词测试
+python3 test_client.py --prompt "美丽的日落山景" --batch-size 2
 
-# Check server health
-python test_client.py --health
+# 检查服务器健康状态
+python3 test_client.py --health
+
+# 指定服务器地址
+python3 test_client.py --base-url http://localhost:8001
 ```
 
-## Configuration
+## ⚙️ 配置说明
 
-### Supported Parameters
+### 支持的参数
 
-| Parameter | Type | Default | Description |
+| 参数 | 类型 | 默认值 | 说明 |
 |-----------|------|---------|-------------|
-| `prompt` | string | Required | Image description |
-| `negative_prompt` | string | "" | Things to avoid in image |
-| `model` | string | "base" | Model type (base/turbo) |
-| `batch_size` | int | 1 | Number of images to generate |
-| `width` | int | 1024 | Image width |
-| `height` | int | 1024 | Image height |
-| `steps` | int | 8 | Number of generation steps |
-| `cfg_scale` | int | 7 | CFG scale for guidance |
+| `prompt` | string | 必需 | 图片描述文字 |
+| `negative_prompt` | string | "" | 要避免的内容描述 |
+| `model` | string | "base" | 模型类型 (base/turbo) |
+| `batch_size` | int | 1 | 生成图片数量 |
+| `width` | int | 1024 | 图片宽度 |
+| `height` | int | 1024 | 图片高度 |
+| `steps` | int | 8 | 生成步数 |
+| `cfg_scale` | int | 7 | 引导强度 |
 
-### Default Settings
+### 默认设置
 
-- **Server Port**: 8000
-- **Model**: turbo (when "turbo" is in model name)
-- **Timeout**: 30 seconds for API calls
-- **Polling Interval**: 5 seconds
-- **Max Polling Attempts**: 60 (5 minutes total)
+- **服务器端口**: 8001（本地）
+- **默认模型**: turbo（当模型名称包含"turbo"时）
+- **超时时间**: API 调用 30 秒
+- **轮询间隔**: 5 秒
+- **最大轮询次数**: 60 次（总计 5 分钟）
 
-## Error Handling
+## 🛡️ 错误处理
 
-The proxy server includes comprehensive error handling:
+代理服务器包含完善的错误处理机制：
 
-- **Network Errors**: Handles connection timeouts and failures
-- **API Errors**: Propagates Z-Image API errors with proper HTTP status codes
-- **Validation Errors**: Validates input parameters before forwarding requests
-- **Logging**: Detailed logging for debugging and monitoring
+- **网络错误**: 处理连接超时和失败
+- **API 错误**: 传播 Z-Image API 错误并附带正确的 HTTP 状态码
+- **验证错误**: 在转发请求前验证输入参数
+- **日志记录**: 详细的日志记录用于调试和监控
 
-## Monitoring
+## 📊 监控
 
-### Health Check
+### 健康检查
 ```bash
-curl http://localhost:8000/health
+# 本地服务器
+curl http://localhost:8001/api/health
+
+# 云端服务器
+curl https://your-app.vercel.app/api/health
 ```
 
-### Server Info
+### 服务器信息
 ```bash
-curl http://localhost:8000/
+# 本地服务器
+curl http://localhost:8001/api/
+
+# 云端服务器
+curl https://your-app.vercel.app/api/
 ```
 
-## Troubleshooting
+## 🔧 故障排除
 
-### Common Issues
+### 常见问题
 
-1. **Connection Refused**: Make sure the proxy server is running
-2. **Timeout Errors**: Check your internet connection and Z-Image service status
-3. **Invalid Prompt**: Ensure the prompt is a non-empty string
-4. **Batch Size Too Large**: Try smaller batch sizes
+1. **连接被拒绝**: 确保代理服务器正在运行
+2. **超时错误**: 检查你的网络连接和 Z-Image 服务状态
+3. **无效提示词**: 确保提示词是非空字符串
+4. **批量大小过大**: 尝试使用较小的批量大小
+5. **端口占用**: 如果 8000 端口被占用，服务器会自动使用 8001 端口
 
-### Logs
+### 日志信息
 
-The server logs detailed information about:
-- Request forwarding
-- Task submission
-- Status polling
-- Errors and exceptions
+服务器会记录详细的信息：
+- 请求转发
+- 任务提交
+- 状态轮询
+- 错误和异常
 
-## Architecture
+## 🏗️ 架构说明
 
 ```
-Client (OpenAI SDK) → Proxy Server → Z-Image API
-                      (Translation)   (Generation)
+客户端 (OpenAI SDK) → 代理服务器 → Z-Image API
+                     (格式转换)    (图片生成)
 ```
 
-1. Client sends OpenAI-compatible request
-2. Proxy server translates to Z-Image format
-3. Z-Image API processes the request
-4. Proxy server returns OpenAI-compatible response
-5. Client polls for results using provided UUID
+1. 客户端发送 OpenAI 兼容的请求
+2. 代理服务器将其翻译为 Z-Image 格式
+3. Z-Image API 处理请求
+4. 代理服务器返回 OpenAI 兼容的响应
+5. 客户端使用提供的 UUID 轮询获取结果
 
-## License
+## 📄 许可证
 
-This project is provided as-is for educational and development purposes.
+本项目仅供教育和开发目的使用。
 
-## Contributing
+## 🤝 贡献
 
-Feel free to submit issues and enhancement requests!
+欢迎提交问题反馈和功能请求！
+
+## 🌟 支持
+
+如果这个项目对你有帮助，请给个 ⭐ Star！
+
+### 相关链接
+
+- [Z-Image 官方网站](https://zimage.run/)
+- [Vercel 部署指南](VERCEL_DEPLOYMENT.md)
+- [问题反馈](https://github.com/xianyu110/z-image/issues)
+
+### 技术栈
+
+- **后端**: Python (Flask / Vercel Serverless)
+- **部���**: Vercel (Serverless Functions)
+- **API**: OpenAI Compatible / Z-Image API
+- **无外部依赖**: 仅使用 Python 标准库

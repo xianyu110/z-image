@@ -1,6 +1,6 @@
-# Vercel 部署指南
+# Vercel 云端部署指南
 
-Z-Image代理服务器的Vercel无服务器部署版本。
+将 Z-Image 图片生成代理服务器部署到 Vercel 云平台的完整指南。
 
 ## 📁 项目结构
 
@@ -8,56 +8,67 @@ Z-Image代理服务器的Vercel无服务器部署版本。
 z-image/
 ├── api/
 │   └── z-image.py           # 主要的无服务器函数
-├── vercel.json              # Vercel配置文件
-├── package.json             # Node.js项目配置
-├── vercel_requirements.txt  # Python依赖（空 - 仅使用标准库）
+├── vercel.json              # Vercel 配置文件
+├── package.json             # Node.js 项目配置
+├── vercel_requirements.txt  # Python 依赖（空 - 仅使用标准库）
 └── README.md                # 项目文档
 ```
 
-## 🚀 部署步骤
+## 🚀 部署方法
 
-### 1. 安装Vercel CLI
+### 方法一：一键部署（推荐）
+
+点击下面的按钮，自动部署到 Vercel：
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/xianyu110/z-image.git)
+
+### 方法二：命令行部署
+
+#### 1. 安装 Vercel CLI
 
 ```bash
 npm i -g vercel
 ```
 
-### 2. 登录Vercel
+#### 2. 登录 Vercel
 
 ```bash
 vercel login
 ```
 
-### 3. 部署到Vercel
+#### 3. 部署到 Vercel
 
 在项目根目录运行：
 
 ```bash
+# 克隆项目（如果还没有）
+git clone https://github.com/xianyu110/z-image.git
+cd z-image
+
+# 部署到预览环境
 vercel
-```
 
-或者直接部署到生产环境：
-
-```bash
+# 或者直接部署到生产环境
 vercel --prod
 ```
 
 ## 🔧 配置说明
 
-### Vercel配置 (vercel.json)
+### Vercel 配置 (vercel.json)
 
 - **运行时**: Python 3.9
-- **路由规则**: 将API请求转发到无服务器函数
-- **构建配置**: 使用@vercel/python构建器
+- **路由规则**: 将 API 请求转发到无服务器函数
+- **构建配置**: 使用 @vercel/python 构建器
+- **零依赖**: 仅使用 Python 标准库，部署快速
 
-### 支持的端点
+### 🌐 支持的端点
 
-部署后的API端点格式为：
-- `https://your-domain.vercel.app/api/v1/chat/completions`
-- `https://your-domain.vercel.app/api/v1/tasks/{uuid}`
-- `https://your-domain.vercel.app/api/v1/images/{uuid}`
-- `https://your-domain.vercel.app/api/health`
-- `https://your-domain.vercel.app/api/`
+部署后的 API 端点格式为：
+- `https://your-app.vercel.app/api/v1/chat/completions` - 生成图片
+- `https://your-app.vercel.app/api/v1/tasks/{uuid}` - 检查任务状态
+- `https://your-app.vercel.app/api/v1/images/{uuid}` - 获取完成的图片
+- `https://your-app.vercel.app/api/health` - 健康检查
+- `https://your-app.vercel.app/api/` - 服务器信息
 
 ## 🧪 本地测试
 
@@ -75,7 +86,7 @@ vercel dev
 
 这将启动本地开发服务器，通常在 `http://localhost:3000`
 
-### 3. 测试API
+### 3. 测试 API
 
 ```bash
 # 测试健康检查
@@ -93,11 +104,14 @@ curl http://localhost:3000/api/v1/chat/completions \
       "height": 1024
     }
   }'
+
+# 测试任务状态（使用返回的 UUID）
+curl http://localhost:3000/api/v1/tasks/{task-uuid}
 ```
 
 ## 🌐 生产环境使用
 
-### cURL示例
+### cURL 命令示例
 
 ```bash
 # 生成图片
@@ -105,12 +119,12 @@ curl https://your-app.vercel.app/api/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "zimage-turbo",
-    "messages": [{"role": "user", "content": "A beautiful sunset over mountains"}],
+    "messages": [{"role": "user", "content": "美丽的日落山景"}],
     "extra_body": {
       "batch_size": 4,
       "width": 1360,
       "height": 1024,
-      "negative_prompt": "blurry,watermark"
+      "negative_prompt": "模糊,水印"
     }
   }'
 
@@ -121,10 +135,10 @@ curl https://your-app.vercel.app/api/v1/tasks/{task-uuid}
 curl https://your-app.vercel.app/api/v1/images/{task-uuid}
 ```
 
-### JavaScript/Node.js示例
+### JavaScript/Node.js 示例
 
 ```javascript
-// 使用fetch API
+// 使用 fetch API
 async function generateImage(prompt) {
   const response = await fetch('https://your-app.vercel.app/api/v1/chat/completions', {
     method: 'POST',
@@ -149,18 +163,19 @@ async function generateImage(prompt) {
 }
 
 // 使用示例
-generateImage('A cat on the moon, surrealism')
-  .then(result => console.log(result))
-  .catch(error => console.error(error));
+generateImage('一只站在月球上的猫，超现实主义')
+  .then(result => console.log('任务已提交:', result.choices[0].message.task_uuid))
+  .catch(error => console.error('错误:', error));
 ```
 
-### Python示例
+### Python 示例
 
 ```python
 import requests
 import time
 
 def generate_image(prompt):
+    """生成图片"""
     url = "https://your-app.vercel.app/api/v1/chat/completions"
 
     response = requests.post(url, json={
@@ -175,10 +190,24 @@ def generate_image(prompt):
 
     return response.json()
 
+def check_task_status(task_uuid):
+    """检查任务状态"""
+    url = f"https://your-app.vercel.app/api/v1/tasks/{task_uuid}"
+    response = requests.get(url)
+    return response.json()
+
 # 使用示例
-result = generate_image("A cat on the moon, surrealism")
+result = generate_image("一只站在月球上的猫，超现实主义")
 task_uuid = result['choices'][0]['message']['content']
-print(f"Task UUID: {task_uuid}")
+print(f"任务已提交，UUID: {task_uuid}")
+
+# 轮询检查结果
+while True:
+    status = check_task_status(task_uuid)
+    if status['success'] and status['data']['task']['taskStatus'] == 'completed':
+        print("图片生成完成！")
+        break
+    time.sleep(2)
 ```
 
 ## ⚙️ 环境变量

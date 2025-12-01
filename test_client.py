@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Test client for Z-Image Proxy Server
-Demonstrates how to use the OpenAI-compatible proxy
+Z-Image 代理服务器测试客户端
+演示如何使用兼容 OpenAI 格式的代理服务器
 """
 
 import requests
@@ -13,7 +13,7 @@ from typing import Optional
 BASE_URL = "http://localhost:8001"
 
 def test_health_check():
-    """Test the health check endpoint"""
+    """测试健康检查端点"""
     try:
         response = requests.get(f"{BASE_URL}/health")
         print("Health check:", response.json())
@@ -24,7 +24,7 @@ def test_health_check():
 
 def generate_image(prompt: str, negative_prompt: str = "", batch_size: int = 1, width: int = 1024, height: int = 1024):
     """
-    Generate images using the OpenAI-compatible endpoint
+    使用 OpenAI 兼容端点生成图片
     """
     url = f"{BASE_URL}/v1/chat/completions"
 
@@ -53,25 +53,25 @@ def generate_image(prompt: str, negative_prompt: str = "", batch_size: int = 1, 
     }
 
     try:
-        print(f"Generating image with prompt: {prompt}")
+        print(f"正在生成图片，提示词: {prompt}")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
 
         result = response.json()
         if "error" in result:
-            print(f"Error: {result['error']}")
+            print(f"错误: {result['error']}")
             return None
 
         task_uuid = result["choices"][0]["message"]["content"]
-        print(f"Task submitted with UUID: {task_uuid}")
+        print(f"任务已提交，UUID: {task_uuid}")
         return task_uuid
 
     except requests.exceptions.RequestException as e:
-        print(f"Error generating image: {e}")
+        print(f"生成图片时出错: {e}")
         return None
 
 def get_task_status(uuid: str):
-    """Check the status of a generation task"""
+    """检查生成任务的状态"""
     try:
         response = requests.get(f"{BASE_URL}/v1/tasks/{uuid}")
         response.raise_for_status()
@@ -80,12 +80,12 @@ def get_task_status(uuid: str):
         return result
 
     except requests.exceptions.RequestException as e:
-        print(f"Error checking task status: {e}")
+        print(f"检查任务状态时出错: {e}")
         return None
 
 def get_completed_images(uuid: str, timeout: int = 300):
     """
-    Wait for images to complete and return the URLs
+    等待图片完成并返回 URL
     """
     try:
         response = requests.get(f"{BASE_URL}/v1/images/{uuid}")
@@ -95,72 +95,72 @@ def get_completed_images(uuid: str, timeout: int = 300):
         return result
 
     except requests.exceptions.RequestException as e:
-        print(f"Error getting completed images: {e}")
+        print(f"获取完成图片时出错: {e}")
         return None
 
 def test_full_workflow(prompt: str, negative_prompt: str = ""):
-    """Test the complete workflow from generation to completion"""
-    print("\n=== Testing Full Workflow ===")
+    """测试从生成到完成的完整工作流程"""
+    print("\n=== 测试完整工作流程 ===")
 
-    # Step 1: Generate image
+    # 第一步：生成图片
     task_uuid = generate_image(prompt, negative_prompt)
     if not task_uuid:
-        print("Failed to submit generation task")
+        print("提交生成任务失败")
         return
 
-    # Step 2: Wait for completion
-    print(f"\nWaiting for task {task_uuid} to complete...")
+    # 第二步：等待完成
+    print(f"\n正在等待任务 {task_uuid} 完成...")
     start_time = time.time()
 
     while True:
         elapsed = time.time() - start_time
-        if elapsed > 300:  # 5 minute timeout
-            print("Timeout reached")
+        if elapsed > 300:  # 5分钟超时
+            print("达到超时时间")
             break
 
-        # Check status
+        # 检查状态
         status_result = get_task_status(task_uuid)
         if status_result and status_result.get('success'):
             task_data = status_result['data']['task']
             status = task_data.get('taskStatus')
             progress = task_data.get('progress', 0)
 
-            print(f"Status: {status}, Progress: {progress}%")
+            print(f"状态: {status}, 进度: {progress}%")
 
             if status == 'completed':
-                print("Task completed!")
+                print("任务已完成！")
                 break
             elif status == 'failed':
-                print("Task failed!")
+                print("任务失败！")
                 break
 
         time.sleep(5)
 
-    # Step 3: Get results
-    print("\nGetting final results...")
+    # 第三步：获取结果
+    print("\n正在获取最终结果...")
     results = get_completed_images(task_uuid)
     if results and results.get('status') == 'completed':
         image_urls = results.get('image_urls', [])
-        print(f"\nGenerated {len(image_urls)} images:")
+        print(f"\n已生成 {len(image_urls)} 张图片:")
         for i, url in enumerate(image_urls):
             print(f"  {i+1}. {url}")
     elif results:
-        print(f"Error: {results.get('error', 'Unknown error')}")
+        print(f"错误: {results.get('error', '未知错误')}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Test client for Z-Image Proxy Server")
-    parser.add_argument("--prompt", "-p", default="一只站在月球上的猫，超现实主义",
-                       help="Prompt for image generation")
+    parser = argparse.ArgumentParser(description="Z-Image 代理服务器测试客户端")
+    parser.add_argument("--prompt", "-p", default="一只站在���球上的猫，超现实主义",
+                       help="图片生成提示词")
     parser.add_argument("--negative-prompt", "-n", default="模糊,水印",
-                       help="Negative prompt for image generation")
+                       help="负面提示词")
     parser.add_argument("--batch-size", "-b", type=int, default=1,
-                       help="Number of images to generate")
+                       help="生成图片数量")
     parser.add_argument("--width", "-w", type=int, default=1024,
-                       help="Image width")
+                       help="图片宽度")
     parser.add_argument("--height", "-H", type=int, default=1024,
-                       help="Image height")
+                       help="图片高度")
     parser.add_argument("--health", action="store_true",
-                       help="Run health check only")
+                       help="仅运行健康检查")
 
     args = parser.parse_args()
 
@@ -168,17 +168,17 @@ def main():
         test_health_check()
         return
 
-    # First check if server is running
+    # 首先检查服务器是否运行
     if not test_health_check():
-        print("Server is not running. Please start the proxy server first:")
-        print("python zimage_proxy.py")
+        print("服务器未运行。请先启动代理服务器:")
+        print("python3 zimage_proxy.py")
         return
 
-    print("Server is running. Starting image generation test...")
+    print("服务器正在运行。开始图片生成测试...")
 
-    # Test with provided arguments
+    # 使用提供的参数进行测试
     if args.batch_size > 1:
-        # Generate multiple images at once
+        # 一次生成多张图片
         task_uuid = generate_image(
             args.prompt,
             args.negative_prompt,
@@ -189,7 +189,7 @@ def main():
         if task_uuid:
             test_full_workflow(args.prompt, args.negative_prompt)
     else:
-        # Test single image with full workflow
+        # 测试单张图片的完整工作流程
         test_full_workflow(args.prompt, args.negative_prompt)
 
 if __name__ == "__main__":
