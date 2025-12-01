@@ -10,11 +10,51 @@
 - **错误处理** - 完善的错误处理和日志记录
 - **健康监控** - 内置健康检查端点
 - **易于集成** - 与现有的 OpenAI SDK 完全兼容
-- **双重部署** - 支持本地部署和 Vercel 云端部署
+- **多种部署** - 支持本地部署、Vercel 云端部署和 Docker 容器化部署
 
 ## 📦 安装
 
-### 方法一：本地部署
+### 方法一：Docker 部署（推荐）
+
+#### 1. 使用 Docker Compose（最简单）
+
+```bash
+# 克隆仓库
+git clone https://github.com/xianyu110/z-image.git
+cd z-image
+
+# 启动服务
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+```
+
+#### 2. 使用 Docker 命令
+
+```bash
+# 构建镜像
+docker build -t z-image-proxy .
+
+# 运行容器
+docker run -d \
+  --name z-image-proxy \
+  -p 8000:8000 \
+  --restart unless-stopped \
+  z-image-proxy
+
+# 查看日志
+docker logs z-image-proxy
+
+# 停止容器
+docker stop z-image-proxy
+docker rm z-image-proxy
+```
+
+### 方法二：本地部署
 
 1. 克隆或下载这个仓库
 2. 安装依赖：
@@ -22,13 +62,15 @@
    pip install -r requirements.txt
    ```
 
-### 方法二：Vercel 部署（推荐）
+### 方法三：Vercel 部署
 
 1. 点击下面的按钮一键部署到 Vercel：
 
    [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/xianyu110/z-image.git)
 
 2. 或者手动部署（见 [Vercel 部署指南](VERCEL_DEPLOYMENT.md)）
+
+详细部署指南请参考 [Docker 部署指南](DOCKER_DEPLOYMENT.md)。
 
 ## 🚀 使用方法
 
