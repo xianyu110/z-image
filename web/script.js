@@ -7,7 +7,7 @@ let isGenerating = false;
 
 // API 配置
 const API_CONFIG = {
-    baseUrl: 'http://localhost:8001',
+    baseUrl: 'http://localhost:8003',
     endpoints: {
         health: '/health',
         completions: '/v1/chat/completions',
@@ -220,11 +220,18 @@ async function generateImage() {
         const data = await response.json();
 
         // 验证响应数据结构
-        if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.task_uuid) {
-            throw new Error('服务器响应格式错误，缺少任务 ID');
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('服务器响应格式错误');
         }
 
-        currentTaskId = data.choices[0].message.task_uuid;
+        // 尝试从不同位置获取任务ID
+        currentTaskId = data.choices[0].message.task_uuid ||
+                       data.choices[0].message.task_id ||
+                       data.task_id;
+
+        if (!currentTaskId) {
+            throw new Error('服务器响应中缺少任务 ID');
+        }
 
         document.getElementById('taskId').textContent = currentTaskId;
         updateStatus('任务已提交');
@@ -282,8 +289,18 @@ async function checkTaskStatus() {
         }
 
         const data = await response.json();
-        const taskData = data.data.task;
 
+        // 检查响应结构
+        if (!data.success || !data.data || !data.data.task) {
+            if (data.timeout) {
+                // 超时情况，继续等待
+                addLog('网络超时，继续等待...', 'warning');
+                return;
+            }
+            throw new Error('无法解析任务状态');
+        }
+
+        const taskData = data.data.task;
         updateStatus(taskData.taskStatus);
         updateProgress(taskData.progress || 0);
 

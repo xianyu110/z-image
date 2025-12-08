@@ -95,7 +95,7 @@ def chat_completions():
         logger.info(f"Fast submit with preset '{preset}': {zimage_payload}")
 
         # 提交到Z-Image
-        response = requests.post(ZIMAGE_GENERATE, json=zimage_payload, timeout=10)
+        response = requests.post(ZIMAGE_GENERATE, json=zimage_payload, timeout=30)
         response.raise_for_status()
 
         result = response.json()
@@ -157,23 +157,51 @@ def get_task_status(uuid: str):
                     })
 
         # 调用实际API
-        response = requests.get(f"{ZIMAGE_TASK}/{uuid}", timeout=5)
-        response.raise_for_status()
+        try:
+            response = requests.get(f"{ZIMAGE_TASK}/{uuid}", timeout=10)
+            response.raise_for_status()
+            result = response.json()
 
-        result = response.json()
+            # 更新缓存
+            with cache_lock:
+                if uuid in task_cache:
+                    task_cache[uuid].update({
+                        'status': result.get('data', {}).get('task', {}).get('taskStatus', 'unknown'),
+                        'last_checked': time.time()
+                    })
 
-        # 更新缓存
-        with cache_lock:
-            if uuid in task_cache:
-                task_cache[uuid].update({
-                    'status': result.get('data', {}).get('task', {}).get('taskStatus', 'unknown'),
-                    'last_checked': time.time()
-                })
-
-        return jsonify(result)
+            return jsonify(result)
+        except requests.exceptions.Timeout:
+            # 超时时不返回500，而是返回缓存状态
+            with cache_lock:
+                if uuid in task_cache:
+                    cached_info = task_cache[uuid]
+                    return jsonify({
+                        "uuid": uuid,
+                        "status": cached_info.get('status', 'processing'),
+                        "timeout": True,
+                        "message": "Request timed out, returning cached status"
+                    })
+            # 如果没有缓存，返回处理中状态
+            return jsonify({
+                "uuid": uuid,
+                "status": "processing",
+                "timeout": True,
+                "message": "Request timed out, task may still be processing"
+            })
 
     except Exception as e:
         logger.error(f"Error checking task status: {str(e)}")
+        # 检查是否有缓存可用
+        with cache_lock:
+            if uuid in task_cache:
+                cached_info = task_cache[uuid]
+                return jsonify({
+                    "uuid": uuid,
+                    "status": cached_info.get('status', 'unknown'),
+                    "error": f"Network error: {str(e)}",
+                    "cached": True
+                })
         return jsonify({"error": f"Network error: {str(e)}"}), 500
 
 @app.route('/v1/images/<uuid>', methods=['GET'])
@@ -190,8 +218,27 @@ def get_image_results_optimized(uuid: str):
         attempt = 0
 
         while attempt < max_attempts:
-            response = requests.get(f"{ZIMAGE_TASK}/{uuid}", timeout=5)
-            response.raise_for_status()
+            try:
+                response = requests.get(f"{ZIMAGE_TASK}/{uuid}", timeout=10)
+                response.raise_for_status()
+            except requests.exceptions.Timeout:
+                logger.warning(f"Timeout checking task {uuid}, attempt {attempt}/{max_attempts}")
+                # 不立即失败，继续尝试
+                if attempt < max_attempts - 1:
+                    time.sleep(base_interval)
+                    attempt += 1
+                    continue
+                else:
+                    # 最后一次尝试，检查缓存
+                    with cache_lock:
+                        if uuid in task_cache and task_cache[uuid].get('status') == 'completed':
+                            logger.info(f"Returning cached completion for task {uuid}")
+                            return jsonify({
+                                "uuid": uuid,
+                                "status": "completed",
+                                "cached": True
+                            })
+                    raise
 
             result = response.json()
 
@@ -211,9 +258,12 @@ def get_image_results_optimized(uuid: str):
                     logger.info(f"Task {uuid} completed with {len(image_urls)} images")
 
                     return jsonify({
+                        "success": True,
+                        "data": {
+                            "images": image_urls
+                        },
                         "uuid": uuid,
                         "status": "completed",
-                        "image_urls": image_urls,
                         "task_info": task_data,
                         "total_time": attempt * base_interval
                     })
@@ -273,7 +323,7 @@ def fast_generate():
             "cfg_scale": 5
         }
 
-        response = requests.post(ZIMAGE_GENERATE, json=fast_payload, timeout=10)
+        response = requests.post(ZIMAGE_GENERATE, json=fast_payload, timeout=30)
         response.raise_for_status()
 
         result = response.json()
