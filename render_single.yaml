@@ -1,5 +1,5 @@
 services:
-  # 统一服务 - 同时提供 API 和前端（推荐用于免费部署）
+  # ��一服务 - 同时提供 API 和前端
   - type: web
     name: z-image-unified
     env: python

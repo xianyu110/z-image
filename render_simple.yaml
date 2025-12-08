@@ -1,13 +1,13 @@
 services:
-  # 统一服务 - 同时提供 API 和前端（推荐用于免费部署）
+  # 仅部署后端 API 服务（前端通过API访问）
   - type: web
-    name: z-image-unified
+    name: z-image-api
     env: python
     repo: https://github.com/xianyu110/z-image.git
     buildCommand: |
       pip install -r requirements.txt
     startCommand: |
-      python zimage_proxy_unified.py
+      python zimage_proxy_simple.py
     envVars:
       - key: PORT
         value: 8000
@@ -17,7 +17,5 @@ services:
         value: https://zimage.run
       - key: ENABLE_KEEP_ALIVE
         value: "true"
-      - key: DEBUG
-        value: "false"
     healthCheckPath: /health
     autoDeploy: true
