@@ -37,32 +37,15 @@ services:
         destination: https://z-image-api.onrender.com
     autoDeploy: true
 
-  # Keep-alive Cron 服务
+  # Keep-alive Cron 服务（使用独立的ping脚本）
   - type: cron
     name: z-image-keepalive
     repo: https://github.com/xianyu110/z-image.git
-    schedule: "*/10 * * * *"  # 每10分钟运行一次
+    schedule: "*/15 * * * *"  # 每15分钟运行一次（比休眠时间短一点）
     buildCommand: |
       pip install requests
     startCommand: |
-      python -c "
-import requests
-import os
-from datetime import datetime
-
-services = [
-    os.environ.get('RENDER_URL', 'https://z-image-api.onrender.com')
-]
-
-print(f'[{datetime.now()}] Starting keep-alive pings...')
-
-for service in services:
-    try:
-        response = requests.get(f'{service}/health', timeout=30)
-        if response.status_code == 200:
-            print(f'✅ {service} - OK')
-        else:
-            print(f'⚠️ {service} - Status: {response.status_code}')
-    except Exception as e:
-        print(f'❌ {service} - Error: {str(e)}')
-"
+      python3 cron_ping.py
+    envVars:
+      - key: RENDER_URL
+        value: https://z-image-api.onrender.com
