@@ -17,6 +17,8 @@ services:
         value: "true"
       - key: ZIMAGE_API_HOST
         value: https://zimage.run
+      - key: ENABLE_KEEP_ALIVE
+        value: "true"
     healthCheckPath: /health
     autoDeploy: true
 
@@ -34,3 +36,33 @@ services:
         source: /api/*
         destination: https://z-image-api.onrender.com
     autoDeploy: true
+
+  # Keep-alive Cron 服务
+  - type: cron
+    name: z-image-keepalive
+    repo: https://github.com/xianyu110/z-image.git
+    schedule: "*/10 * * * *"  # 每10分钟运行一次
+    buildCommand: |
+      pip install requests
+    startCommand: |
+      python -c "
+import requests
+import os
+from datetime import datetime
+
+services = [
+    os.environ.get('RENDER_URL', 'https://z-image-api.onrender.com')
+]
+
+print(f'[{datetime.now()}] Starting keep-alive pings...')
+
+for service in services:
+    try:
+        response = requests.get(f'{service}/health', timeout=30)
+        if response.status_code == 200:
+            print(f'✅ {service} - OK')
+        else:
+            print(f'⚠️ {service} - Status: {response.status_code}')
+    except Exception as e:
+        print(f'❌ {service} - Error: {str(e)}')
+"

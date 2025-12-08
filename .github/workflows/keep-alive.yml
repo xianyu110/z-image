@@ -1,0 +1,79 @@
+name: Keep Alive Service
+
+on:
+  # 定时运行 - 每20分钟一次（GitHub Actions最小间隔是5分钟）
+  schedule:
+    - cron: '*/20 * * * *'
+
+  # 允许手动触发
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Keep Alive - Ping Render Service
+        run: |
+          # 要ping的服务列表
+          SERVICES=(
+            "https://z-image-api.onrender.com/health"
+            "https://z-image-frontend.onrender.com"
+          )
+
+          for service in "${SERVICES[@]}"; do
+            echo "[$(date)] Pinging $service..."
+
+            # 发送ping请求
+            response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$service")
+
+            if [ "$response" = "200" ]; then
+              echo "✅ Success - HTTP $response"
+            else
+              echo "❌ Failed - HTTP $response"
+            fi
+
+            # 等待2秒再ping下一个服务
+            sleep 2
+          done
+
+  # 使用Python脚本进行更详细的ping
+  detailed-ping:
+    runs-on: ubuntu-latest
+    needs: keep-alive
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Run detailed ping script
+        env:
+          RENDER_URL: "https://z-image-api.onrender.com"
+        run: |
+          python - <<'EOF'
+          import requests
+          import os
+          from datetime import datetime
+
+          url = os.environ.get('RENDER_URL', 'https://z-image-api.onrender.com')
+
+          try:
+              response = requests.get(f"{url}/health", timeout=30)
+              print(f"[{datetime.now()}] ✅ {url} - Status: {response.status_code}")
+              print(f"Response: {response.json()}")
+
+              if response.status_code == 200:
+                  print("✅ Service is healthy")
+              else:
+                  print("⚠️ Service responded but not with 200")
+
+          except requests.exceptions.Timeout:
+              print(f"[{datetime.now()}] ❌ {url} - Timeout")
+          except Exception as e:
+              print(f"[{datetime.now()}] ❌ {url} - Error: {str(e)}")
+          EOF

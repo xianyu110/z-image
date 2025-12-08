@@ -4,6 +4,8 @@ import requests
 import time
 import logging
 from datetime import datetime
+import threading
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +20,27 @@ ZIMAGE_TASK = "https://zimage.run/api/z-image/task"
 
 # 任务缓存
 task_cache = {}
+
+# Keep-alive 功能
+def start_keep_alive():
+    """启动keep-alive后台线程"""
+    if os.environ.get('ENABLE_KEEP_ALIVE', 'true').lower() == 'true':
+        # 定义keep-alive函数
+        def keep_alive():
+            while True:
+                try:
+                    # 每10分钟ping一次（Render休眠时间是15分钟）
+                    time.sleep(600)
+                    # 访问健康检查端点保持活跃
+                    requests.get(f"http://localhost:{os.environ.get('PORT', 8000)}/health", timeout=5)
+                    logger.info("Keep-alive ping sent")
+                except Exception as e:
+                    logger.warning(f"Keep-alive ping failed: {e}")
+
+        # 启动后台线程
+        keep_alive_thread = threading.Thread(target=keep_alive, daemon=True)
+        keep_alive_thread.start()
+        logger.info("Keep-alive service started (pinging every 10 minutes)")
 
 @app.route('/')
 def home():
@@ -271,9 +294,15 @@ def get_image_results(uuid):
         }), 500
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 8003))
+
     print("=" * 50)
     print("Z-Image Simple Proxy Server")
-    print(f"Server running on: http://localhost:8003")
-    print(f"Health check: http://localhost:8003/health")
+    print(f"Server running on: http://localhost:{port}")
+    print(f"Health check: http://localhost:{port}/health")
     print("=" * 50)
-    app.run(host='0.0.0.0', port=8003, debug=True)
+
+    # 启动keep-alive
+    start_keep_alive()
+
+    app.run(host='0.0.0.0', port=port, debug=False)
