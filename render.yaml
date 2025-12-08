@@ -36,16 +36,3 @@ services:
         source: /api/*
         destination: https://z-image-api.onrender.com
     autoDeploy: true
-
-  # Keep-alive Cron 服务（使用独立的ping脚本）
-  - type: cron
-    name: z-image-keepalive
-    repo: https://github.com/xianyu110/z-image.git
-    schedule: "*/15 * * * *"  # 每15分钟运行一次（比休眠时间短一点）
-    buildCommand: |
-      pip install requests
-    startCommand: |
-      python3 cron_ping.py
-    envVars:
-      - key: RENDER_URL
-        value: https://z-image-api.onrender.com
