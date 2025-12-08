@@ -1,0 +1,36 @@
+services:
+  # 后端 API 服务
+  - type: web
+    name: z-image-api
+    env: python
+    repo: https://github.com/xianyu110/z-image.git
+    rootDir: .
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+    startCommand: |
+      python zimage_proxy_simple.py
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      - key: ZIMAGE_API_HOST
+        value: https://zimage.run
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # 前端静态文件服务
+  - type: web
+    name: z-image-frontend
+    env: static
+    repo: https://github.com/xianyu110/z-image.git
+    rootDir: web
+    buildCommand: ""
+    staticPublishPath: .
+    plan: free
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://z-image-api.onrender.com
+    autoDeploy: true
