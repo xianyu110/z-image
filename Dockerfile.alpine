@@ -1,5 +1,5 @@
-# 使用官方Python轻量级镜像
-FROM python:3.11-slim
+# 使用 Alpine Linux - 更小的镜像
+FROM python:3.11-alpine
 
 # 设置工作目录
 WORKDIR /app
@@ -9,8 +9,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000
 
-# 跳过系统包安装 - Python 包已经足够
-# 直接复制并安装Python依赖
+# 安装必要的系统依赖
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    linux-headers
+
+# 复制并安装Python依赖
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -20,7 +25,7 @@ COPY api/ ./api/
 COPY web/ ./web/
 
 # 创建非root用户
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+RUN adduser -D -u 1000 appuser
 USER appuser
 
 # 暴露端口
