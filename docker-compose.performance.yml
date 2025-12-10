@@ -6,7 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile.fixed
       shm_size: 512M  # 增大共享内存
-      container_name: z-image-high-performance
+    image: z-image-high-performance
+    container_name: z-image-high-performance
     ports:
       - "8000:8000"
     environment:
@@ -30,29 +31,13 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    # 高性能资源配置
-    deploy:
-      resources:
-        limits:
-          cpus: '4.0'              # 增加CPU限制
-          memory: 2G               # 增加内存限制
-          pids: 2000              # 增加进程/线程限制
-        reservations:
-          cpus: '1.0'             # 增加CPU预留
-          memory: 1G              # 增加内存预留
-    # 系统限制
+    # 系统限制 (使用兼容的格式)
     ulimits:
       nproc: 131072              # 增加进程限制
-      nofile:
-        soft: 131072
-        hard: 131072
-      memlock: -1               # -1 表示无限制
+      nofile: 131072             # 文件描述符限制
     # 安全配置
     security_opt:
       - no-new-privileges:true
-    # 容器运行时配置
-    oom_kill_disable: false      # 允许OOM kill
-    init: true                   # 使用init进程
     networks:
       - z-image-network
 

@@ -1,13 +1,12 @@
-version: '3.8'
+version: '3.3'
 
 services:
   z-image:
     build:
       context: .
       dockerfile: Dockerfile.fixed
-      shm_size: 256M  # 共享内存大小
-    image: z-image-fixed
-    container_name: z-image-fixed
+    image: z-image-simple
+    container_name: z-image-simple
     ports:
       - "8000:8000"
     environment:
@@ -23,22 +22,10 @@ services:
       - NUMEXPR_NUM_THREADS=2    # NumExpr线程数
       - OPENBLAS_NUM_THREADS=2   # OpenBLAS线程数
     restart: unless-stopped
+    # 简化的健康检查 (兼容性更好)
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=5)"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    # 系统限制 (使用兼容的格式)
-    ulimits:
-      nproc: 65535             # 最大进程数
-      nofile: 65535            # 文件描述符限制
-    # 安全配置
-    security_opt:
-      - no-new-privileges:true
-    networks:
-      - z-image-network
-
-networks:
-  z-image-network:
-    driver: bridge

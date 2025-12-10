@@ -6,7 +6,21 @@
 
 ## 配置选项
 
-### 1. 标准配置 (推荐用于一般使用)
+### 1. 简化兼容配置 (推荐用于老版本Docker)
+
+使用 `docker-compose.simple-compatible.yml`：
+
+```bash
+docker-compose -f docker-compose.simple-compatible.yml up --build
+```
+
+**特性：**
+- 兼容Docker Compose所有版本
+- 启用多线程支持
+- 最小配置复杂度
+- 适用于生产环境
+
+### 2. 标准配置 (推荐用于一般使用)
 
 使用 `docker-compose.fixed.yml`：
 
@@ -16,10 +30,10 @@ docker-compose -f docker-compose.fixed.yml up --build
 
 **特性：**
 - 启用多线程支持
-- 适中的资源限制 (CPU: 2.0, Memory: 1G)
-- 保持稳定性和安全性
+- 增强的系统限制配置
+- 适用于较新版本的Docker Compose
 
-### 2. 高性能配置 (用于高并发需求)
+### 3. 高性能配置 (用于高并发需求)
 
 使用 `docker-compose.performance.yml`：
 
