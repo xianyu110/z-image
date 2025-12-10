@@ -359,4 +359,9 @@ if __name__ == '__main__':
     # 启动keep-alive
     start_keep_alive()
 
-    app.run(host='0.0.0.0', port=port, debug=False, threaded=False, processes=1)
+    # 根据环境变量决定是否使用多线程
+    use_threading = os.environ.get('FLASK_THREADED', 'true').lower() == 'true'
+    use_processes = int(os.environ.get('FLASK_PROCESSES', '1'))
+
+    logger.info(f"Starting Flask server with threaded={use_threading}, processes={use_processes}")
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=use_threading, processes=use_processes)

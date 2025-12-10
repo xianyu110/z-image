@@ -5,7 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.fixed
-    container_name: z-image-fixed
+      shm_size: 256M  # 共享内存大小
+      container_name: z-image-fixed
     ports:
       - "8000:8000"
     environment:
@@ -13,6 +14,13 @@ services:
       - PYTHONUNBUFFERED=1
       - ZIMAGE_API_HOST=https://zimage.run
       - LOG_LEVEL=INFO
+      - ENABLE_KEEP_ALIVE=true   # 启用keep-alive
+      - FLASK_THREADED=true      # 启用Flask多线程
+      - FLASK_PROCESSES=1        # Flask进程数
+      - OMP_NUM_THREADS=2        # OpenMP线程数
+      - MKL_NUM_THREADS=2        # Intel MKL线程数
+      - NUMEXPR_NUM_THREADS=2    # NumExpr线程数
+      - OPENBLAS_NUM_THREADS=2   # OpenBLAS线程数
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=5)"]
@@ -20,6 +28,28 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    # 资源限制配置
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'           # CPU限制
+          memory: 1G            # 内存限制
+          pids: 1000            # 进程/线程数限制
+        reservations:
+          cpus: '0.5'           # CPU预留
+          memory: 512M          # 内存预留
+    # 系统限制
+    ulimits:
+      nproc: 65535             # 最大进程数
+      nofile:
+        soft: 65535            # 文件描述符软限制
+        hard: 65535            # 文件描述符硬限制
+    # 安全配置
+    security_opt:
+      - no-new-privileges:true
+    # 容器权限
+    cap_add:
+      - SYS_RESOURCE          # 添加系统资源管理权限
     networks:
       - z-image-network
 

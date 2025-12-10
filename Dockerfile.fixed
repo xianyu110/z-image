@@ -10,9 +10,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000 \
     PIP_NO_PROGRESS_BAR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    ENABLE_KEEP_ALIVE=false
+    ENABLE_KEEP_ALIVE=true \
+    # 线程和性能优化配置
+    OMP_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    NUMEXPR_NUM_THREADS=2 \
+    OPENBLAS_NUM_THREADS=2 \
+    # Python优化
+    PYTHONOPTIMIZE=2 \
+    # 内存管理优化
+    MALLOC_ARENA_MAX=2
 
-# 设置ulimit来解决线程问题
+# 设置系统资源限制
 RUN echo "* soft nproc 65535" >> /etc/security/limits.conf && \
     echo "* hard nproc 65535" >> /etc/security/limits.conf && \
     echo "root soft nproc 65535" >> /etc/security/limits.conf && \
@@ -20,12 +29,22 @@ RUN echo "* soft nproc 65535" >> /etc/security/limits.conf && \
     echo "* soft nofile 65535" >> /etc/security/limits.conf && \
     echo "* hard nofile 65535" >> /etc/security/limits.conf && \
     echo "root soft nofile 65535" >> /etc/security/limits.conf && \
-    echo "root hard nofile 65535" >> /etc/security/limits.conf
+    echo "root hard nofile 65535" >> /etc/security/limits.conf && \
+    echo "* soft memlock unlimited" >> /etc/security/limits.conf && \
+    echo "* hard memlock unlimited" >> /etc/security/limits.conf && \
+    echo "root soft memlock unlimited" >> /etc/security/limits.conf && \
+    echo "root hard memlock unlimited" >> /etc/security/limits.conf
 
-# 设置环境变量增加线程限制
-ENV OMP_NUM_THREADS=1 \
-    MKL_NUM_THREADS=1 \
-    NUMEXPR_NUM_THREADS=1
+# 配置内核参数
+RUN echo "kernel.threads-max = 100000" >> /etc/sysctl.conf && \
+    echo "vm.max_map_count = 262144" >> /etc/sysctl.conf && \
+    echo "fs.file-max = 100000" >> /etc/sysctl.conf
+
+# 安装必要的系统工具
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    procps \
+    htop \
+    && rm -rf /var/lib/apt/lists/*
 
 # 更新 pip 并安装依赖
 COPY requirements.txt .
