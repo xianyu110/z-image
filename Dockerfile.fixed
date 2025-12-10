@@ -9,7 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
     PIP_NO_PROGRESS_BAR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    ENABLE_KEEP_ALIVE=false
 
 # 设置ulimit来解决线程问题
 RUN echo "* soft nproc 65535" >> /etc/security/limits.conf && \

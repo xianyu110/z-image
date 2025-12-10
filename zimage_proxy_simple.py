@@ -25,22 +25,31 @@ task_cache = {}
 def start_keep_alive():
     """启动keep-alive后台线程"""
     if os.environ.get('ENABLE_KEEP_ALIVE', 'true').lower() == 'true':
-        # 定义keep-alive函数
-        def keep_alive():
-            while True:
-                try:
-                    # 每10分钟ping一次（Render休眠时间是15分钟）
-                    time.sleep(600)
-                    # 访问健康检查端点保持活跃
-                    requests.get(f"http://localhost:{os.environ.get('PORT', 8000)}/health", timeout=5)
-                    logger.info("Keep-alive ping sent")
-                except Exception as e:
-                    logger.warning(f"Keep-alive ping failed: {e}")
+        try:
+            # 定义keep-alive函数
+            def keep_alive():
+                while True:
+                    try:
+                        # 每10分钟ping一次（Render休眠时间是15分钟）
+                        time.sleep(600)
+                        # 访问健康检查端点保持活跃
+                        requests.get(f"http://localhost:{os.environ.get('PORT', 8000)}/health", timeout=5)
+                        logger.info("Keep-alive ping sent")
+                    except Exception as e:
+                        logger.warning(f"Keep-alive ping failed: {e}")
 
-        # 启动后台线程
-        keep_alive_thread = threading.Thread(target=keep_alive, daemon=True)
-        keep_alive_thread.start()
-        logger.info("Keep-alive service started (pinging every 10 minutes)")
+            # 启动后台线程
+            keep_alive_thread = threading.Thread(target=keep_alive, daemon=True)
+            keep_alive_thread.start()
+            logger.info("Keep-alive service started (pinging every 10 minutes)")
+        except RuntimeError as e:
+            if "can't start new thread" in str(e):
+                logger.warning("Thread limit reached, disabling keep-alive service")
+                logger.info("Server will continue running without keep-alive service")
+            else:
+                raise e
+        except Exception as e:
+            logger.error(f"Failed to start keep-alive service: {e}")
 
 @app.route('/')
 def home():
