@@ -314,4 +314,4 @@ if __name__ == '__main__':
     # 启动keep-alive
     start_keep_alive()
 
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=False, processes=1)

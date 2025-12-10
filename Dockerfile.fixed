@@ -16,7 +16,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN echo "* soft nproc 65535" >> /etc/security/limits.conf && \
     echo "* hard nproc 65535" >> /etc/security/limits.conf && \
     echo "root soft nproc 65535" >> /etc/security/limits.conf && \
-    echo "root hard nproc 65535" >> /etc/security/limits.conf
+    echo "root hard nproc 65535" >> /etc/security/limits.conf && \
+    echo "* soft nofile 65535" >> /etc/security/limits.conf && \
+    echo "* hard nofile 65535" >> /etc/security/limits.conf && \
+    echo "root soft nofile 65535" >> /etc/security/limits.conf && \
+    echo "root hard nofile 65535" >> /etc/security/limits.conf
+
+# 设置环境变量增加线程限制
+ENV OMP_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    NUMEXPR_NUM_THREADS=1
 
 # 更新 pip 并安装依赖
 COPY requirements.txt .
