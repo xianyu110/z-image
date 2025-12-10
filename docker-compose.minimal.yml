@@ -1,0 +1,31 @@
+version: '3.3'
+
+services:
+  z-image:
+    build:
+      context: .
+      dockerfile: Dockerfile.minimal-working
+    image: z-image-minimal
+    container_name: z-image-minimal
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
+      - ZIMAGE_API_HOST=https://zimage.run
+      - LOG_LEVEL=INFO
+      - ENABLE_KEEP_ALIVE=true
+      - FLASK_THREADED=true
+      - FLASK_PROCESSES=1
+      - OMP_NUM_THREADS=2
+      - MKL_NUM_THREADS=2
+      - NUMEXPR_NUM_THREADS=2
+      - OPENBLAS_NUM_THREADS=2
+    restart: unless-stopped
+    # 基本的健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

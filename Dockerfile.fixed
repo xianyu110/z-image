@@ -40,11 +40,8 @@ RUN echo "kernel.threads-max = 100000" >> /etc/sysctl.conf && \
     echo "vm.max_map_count = 262144" >> /etc/sysctl.conf && \
     echo "fs.file-max = 100000" >> /etc/sysctl.conf
 
-# 安装必要的系统工具
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    procps \
-    htop \
-    && rm -rf /var/lib/apt/lists/*
+# 跳过系统工具安装以避免构建问题
+# 基础镜像已包含必要的工具
 
 # 更新 pip 并安装依赖
 COPY requirements.txt .

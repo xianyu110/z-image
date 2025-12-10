@@ -1,0 +1,42 @@
+# 最简化工作版本 - 避免所有构建问题
+FROM python:3.11-slim
+
+# 设置工作目录
+WORKDIR /app
+
+# 设置基本环境变量
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PORT=8000 \
+    FLASK_THREADED=true \
+    FLASK_PROCESSES=1 \
+    ENABLE_KEEP_ALIVE=true \
+    OMP_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    NUMEXPR_NUM_THREADS=2
+
+# 设置线程限制
+RUN echo "* soft nproc 65535" >> /etc/security/limits.conf && \
+    echo "* hard nproc 65535" >> /etc/security/limits.conf && \
+    echo "* soft nofile 65535" >> /etc/security/limits.conf && \
+    echo "* hard nofile 65535" >> /etc/security/limits.conf
+
+# 复制并安装Python依赖
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# 复制应用代码
+COPY zimage_proxy_simple.py .
+COPY api/ ./api/
+COPY web/ ./web/
+
+# 创建非root用户
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# 暴露端口
+EXPOSE 8000
+
+# 启动命令
+CMD ["python", "zimage_proxy_simple.py"]
