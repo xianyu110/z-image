@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 import threading
 import os
+import re
 
 app = Flask(__name__)
 CORS(app)
@@ -20,6 +21,35 @@ ZIMAGE_TASK = "https://zimage.run/api/z-image/task"
 
 # 任务缓存
 task_cache = {}
+
+def is_valid_uuid(uuid_str):
+    """验证UUID格式"""
+    if not uuid_str:
+        return False
+
+    # 检查是否是标准的UUID格式（8-4-4-4-12）
+    uuid_pattern = re.compile(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+    )
+
+    return bool(uuid_pattern.match(uuid_str))
+
+def extract_task_id(text):
+    """从文本中提取任务ID"""
+    # 如果是有效UUID，直接返回
+    if is_valid_uuid(text):
+        return text
+
+    # 尝试从文本中提取UUID
+    uuid_pattern = re.compile(
+        r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+    )
+
+    match = uuid_pattern.search(text)
+    if match:
+        return match.group()
+
+    return None
 
 # Keep-alive 功能
 def start_keep_alive():
@@ -146,13 +176,22 @@ def chat_completions():
         logger.error(f"Error creating task: {str(e)}")
         return jsonify({"error": f"创建任务失败: {str(e)}"}), 500
 
-@app.route('/v1/tasks/<uuid>', methods=['GET'])
+@app.route('/v1/tasks/<path:uuid>', methods=['GET'])
 def get_task_status(uuid):
     """获取任务状态"""
+    # 尝试从路径中提取有效的任务ID
+    task_id = extract_task_id(uuid)
+    if not task_id:
+        return jsonify({
+            "error": "Invalid task ID format",
+            "message": "任务ID格式无效，请提供有效的UUID",
+            "received": uuid[:100] if uuid else None
+        }), 400
+
     try:
         # 先检查缓存
-        if uuid in task_cache:
-            cache_info = task_cache[uuid]
+        if task_id in task_cache:
+            cache_info = task_cache[task_id]
             # 如果任务刚创建不久，直接返回缓存状态
             if time.time() - cache_info['created_at'] < 5:
                 return jsonify({
@@ -166,28 +205,28 @@ def get_task_status(uuid):
                 })
 
         # 查询实际状态（增加超时时间）
-        response = requests.get(f"{ZIMAGE_TASK}/{uuid}", timeout=15)
+        response = requests.get(f"{ZIMAGE_TASK}/{task_id}", timeout=15)
         response.raise_for_status()
 
         result = response.json()
 
         # 更新缓存
-        if uuid in task_cache and result.get('success'):
+        if task_id in task_cache and result.get('success'):
             task_data = result.get('data', {}).get('task', {})
-            task_cache[uuid]['status'] = task_data.get('taskStatus', 'unknown')
-            task_cache[uuid]['last_checked'] = time.time()
+            task_cache[task_id]['status'] = task_data.get('taskStatus', 'unknown')
+            task_cache[task_id]['last_checked'] = time.time()
 
         return jsonify(result)
 
     except requests.exceptions.Timeout:
         # 超时返回缓存或处理中状态
-        if uuid in task_cache:
+        if task_id in task_cache:
             return jsonify({
                 "success": True,
                 "data": {
                     "task": {
-                        "taskStatus": task_cache[uuid].get('status', 'processing'),
-                        "progress": task_cache[uuid].get('progress', 50)
+                        "taskStatus": task_cache[task_id].get('status', 'processing'),
+                        "progress": task_cache[task_id].get('progress', 50)
                     }
                 },
                 "timeout": True
@@ -203,22 +242,28 @@ def get_task_status(uuid):
             "timeout": True
         })
     except Exception as e:
-        logger.error(f"Error checking task {uuid}: {str(e)}")
+        logger.error(f"Error checking task {task_id}: {str(e)}")
         return jsonify({
             "success": True,  # 即使失败也返回success，避免前端错误
             "data": {
                 "task": {
-                    "taskStatus": "processing" if uuid in task_cache else "unknown",
+                    "taskStatus": "processing" if task_id in task_cache else "unknown",
                     "errorMessage": str(e)
                 }
             }
         })
 
-@app.route('/v1/images/<uuid>', methods=['GET'])
+@app.route('/v1/images/<path:uuid>', methods=['GET'])
 def get_image_results(uuid):
     """获取图片结果（简化版）"""
-    if not uuid:
-        return jsonify({"error": "No task ID provided"}), 400
+    # 尝试从路径中提取有效的任务ID
+    task_id = extract_task_id(uuid)
+    if not task_id:
+        return jsonify({
+            "error": "Invalid task ID format",
+            "message": "任务ID格式无效，请提供有效的UUID",
+            "received": uuid[:100] if uuid else None
+        }), 400
 
     try:
         max_attempts = 40  # 增加最大尝试次数
@@ -226,7 +271,7 @@ def get_image_results(uuid):
 
         while attempt < max_attempts:
             try:
-                response = requests.get(f"{ZIMAGE_TASK}/{uuid}", timeout=15)
+                response = requests.get(f"{ZIMAGE_TASK}/{task_id}", timeout=15)
                 response.raise_for_status()
 
                 result = response.json()
@@ -276,10 +321,10 @@ def get_image_results(uuid):
 
                 attempt += 1
                 if attempt % 5 == 0:
-                    logger.info(f"Task {uuid} still processing, attempt {attempt}/{max_attempts}")
+                    logger.info(f"Task {task_id} still processing, attempt {attempt}/{max_attempts}")
 
             except requests.exceptions.Timeout:
-                logger.warning(f"Timeout checking task {uuid}, attempt {attempt}")
+                logger.warning(f"Timeout checking task {task_id}, attempt {attempt}")
                 # 继续尝试
                 if attempt < max_attempts - 1:
                     time.sleep(5)
@@ -289,14 +334,14 @@ def get_image_results(uuid):
                     break
 
         # 超时处理
-        logger.error(f"Task {uuid} timed out after {max_attempts} attempts")
+        logger.error(f"Task {task_id} timed out after {max_attempts} attempts")
         return jsonify({
             "success": False,
             "error": f"任务超时，已尝试 {max_attempts} 次。图片生成通常需要1-3分钟，请稍后再试。"
         }), 408
 
     except Exception as e:
-        logger.error(f"Error getting images for task {uuid}: {str(e)}")
+        logger.error(f"Error getting images for task {task_id}: {str(e)}")
         return jsonify({
             "success": False,
             "error": f"获取图片失败: {str(e)}"
