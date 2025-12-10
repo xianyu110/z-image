@@ -47,9 +47,6 @@ services:
     # 安全配置
     security_opt:
       - no-new-privileges:true
-    # 容器权限
-    cap_add:
-      - SYS_RESOURCE          # 添加系统资源管理权限
     networks:
       - z-image-network
 

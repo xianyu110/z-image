@@ -46,14 +46,8 @@ services:
       nofile:
         soft: 131072
         hard: 131072
-      memlock:
-        soft: unlimited
-        hard: unlimited
-    # 性能优化
-    privileged: false            # 保持安全
-    cap_add:
-      - SYS_RESOURCE
-      - SYS_PTRACE
+      memlock: -1               # -1 表示无限制
+    # 安全配置
     security_opt:
       - no-new-privileges:true
     # 容器运行时配置
