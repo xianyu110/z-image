@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  z-image:
+    build:
+      context: .
+      dockerfile: Dockerfile.fixed
+    container_name: z-image-fixed
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
+      - ZIMAGE_API_HOST=https://zimage.run
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - z-image-network
+
+networks:
+  z-image-network:
+    driver: bridge
