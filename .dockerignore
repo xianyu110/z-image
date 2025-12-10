@@ -55,7 +55,6 @@ Thumbs.db
 # Vercel
 vercel.json
 vercel_requirements.txt
-api/
 
 # Testing
 test_client.py
