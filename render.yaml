@@ -1,0 +1,33 @@
+services:
+  # Web Service for Z-Image Proxy API
+  - type: web
+    name: z-image-proxy
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python zimage_proxy.py"
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHON_VERSION
+        value: 3.9.0
+
+  # Static Site for Web UI (optional)
+  - type: web
+    name: z-image-web
+    runtime: static
+    buildCommand: "cd web && npm install && npm run build"
+    staticPublishPath: ./web/dist
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: API_URL
+        value: https://z-image-proxy.onrender.com
+        sync: false
+
+databases:
+  # No database needed for this project
+
+# Environment variables for all services
+environment:
+  - key: TZ
+    value: Asia/Shanghai
